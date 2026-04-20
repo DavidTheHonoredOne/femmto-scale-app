@@ -47,7 +47,7 @@ async def scanble():
         print("Por favor, verifique que el Bluetooth de su computadora (Windows) esté ENCENDIDO.")
         print(f"Detalle técnico: {e}")
     except Exception as e:
-        print(f"\n❌ Ocurrió un error inesperado al intentar usar el Bluetooth:")
+        print("\n❌ Ocurrió un error inesperado al intentar usar el Bluetooth:")
         print(f"Detalle: {e}")
 
 if __name__ == "__main__":
