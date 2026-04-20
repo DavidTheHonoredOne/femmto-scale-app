@@ -30,9 +30,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(profiles.router)
-app.include_router(measurements.router)
-app.include_router(export.router)
+app.include_router(profiles.router, prefix="/api")
+app.include_router(measurements.router, prefix="/api")
+app.include_router(export.router, prefix="/api")
 
 
 @app.get("/health", tags=["health"])

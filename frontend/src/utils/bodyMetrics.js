@@ -24,7 +24,7 @@ export function calculateMetrics(weight, profile, impedance = null) {
   const skeletalMuscle = +((muscleMass / weight) * 100 * 0.6).toFixed(1)
   const skeletalMass = +(weight * 0.042).toFixed(1)
   const subcutaneousFat = +(bodyFat * 0.8).toFixed(1)
-  const protein = +((muscleMass * 0.22) / weight * 100).toFixed(1)
+  const protein = +((muscleMass * 0.22 / weight) * 100).toFixed(1)
 
   let bodyWaterL
   if (gender === 'male') {
@@ -36,7 +36,7 @@ export function calculateMetrics(weight, profile, impedance = null) {
 
   const visceral = +Math.max(
     1,
-    Math.min(59, (bmi * age) / 450 * (gender === 'male' ? 1.3 : 1.0))
+    Math.min(59, ((bmi * age) / 450) * (gender === 'male' ? 1.3 : 1.0))
   ).toFixed(0)
 
   const bmr =

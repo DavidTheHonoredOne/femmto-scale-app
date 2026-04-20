@@ -59,7 +59,7 @@ def export_profiles(
     wb.remove(wb.active)  # remove default empty sheet
 
     for profile in profiles:
-        sheet_name = profile.name[:31]  # Excel sheet names max 31 chars
+        sheet_name = f"{profile.name[:27]}_{profile.id}"[:31]  # unique, max 31 chars
         ws = wb.create_sheet(title=sheet_name)
 
         # Profile info header block
