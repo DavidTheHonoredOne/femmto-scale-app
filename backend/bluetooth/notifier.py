@@ -4,6 +4,11 @@ import time
 from bleak import BleakClient
 from bleak.exc import BleakError
 
+try:
+    from backend.bluetooth.decoder import FemmtoDecoder
+except ModuleNotFoundError:
+    from decoder import FemmtoDecoder
+
 # MAC Address de la báscula FEMMTO BCS15
 FEMMTO_MAC = "F8:F2:F0:B9:B4:E5"
 
@@ -14,26 +19,25 @@ CHAR_NOTIFY_FFB2 = "0000ffb2-0000-1000-8000-00805f9b34fb" # Para recibir datos
 # Variables globales para almacenar la captura
 raw_data_capturada = []
 tiempo_inicio = 0
+decodificador = FemmtoDecoder()
 
 def notificacion_handler(sender, data: bytearray):
     """Callback que captura y procesa las notificaciones (paquetes crudos) recibidas."""
     timestamp = time.time() - tiempo_inicio
     
-    # Formateamos en hexadecimal (separado por espacios) y decimal
-    hex_data = data.hex(" ").upper()
-    dec_data = list(data)
+    print(f"\n[+{timestamp:.2f}s] 📥 NUEVO PAQUETE RECIBIDO")
     
-    print(f"\n[+{timestamp:.2f}s] 📥 PAQUETE RECIBIDO:")
-    print(f"   Hexadecimal : {hex_data}")
-    print(f"   Decimal     : {dec_data}")
-    print(f"   Longitud    : {len(data)} bytes")
+    # Decodificamos usando la nueva clase reutilizable (Commit 4) para ver TU peso real
+    resultado = decodificador.decodificar(list(data))
+    decodificador.imprimir_analisis(resultado)
     
     # Agregar a lista global para guardar posteriormente
     paquete = {
         "timestamp_relativo_s": round(timestamp, 3),
-        "hex": hex_data,
-        "decimal": dec_data,
-        "longitud": len(data)
+        "hex": data.hex(" ").upper(),
+        "decimal": list(data),
+        "peso_kg_calculado": resultado.get("peso_kg"),
+        "estado": resultado.get("estado")
     }
     raw_data_capturada.append(paquete)
 
