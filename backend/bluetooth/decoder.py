@@ -33,12 +33,14 @@ class FemmtoDecoder:
 
         # 1. Identificar el tipo de paquete (Estado de estabilización)
         estado = "desconocido"
+        impedancia_ohms = 0
         if b2 == 0x00:
             estado = "midiendo"
         elif b2 == 0x80:
             estado = "estabilizado"
         elif b2 == 0x01:
             estado = "final"
+            impedancia_ohms = (paquete[6] << 8) | paquete[7]
 
         # 2. Calcular peso exacto usando B3, B4 y B5
         # Bit 17 está en el bit menos significativo de B3
@@ -49,6 +51,7 @@ class FemmtoDecoder:
             "valido": True,
             "estado": estado,
             "peso_kg": peso_kg,
+            "impedancia_ohms": impedancia_ohms,
             "raw_bytes": list(paquete),
         }
 
@@ -69,10 +72,9 @@ class FemmtoDecoder:
         elif estado == "estabilizado":
             print(f"✅ [ESTABILIZADO] Peso bloqueado: {peso_kg:.2f} kg")
         elif estado == "final":
-            print(f"\n🎉 [PAQUETE FINAL] Composición Corporal Recibida")
-            print(
-                f"   (Fórmula de peso bruto evaluada a {peso_kg:.2f} kg, posiblemente sean otros datos de biometría)"
-            )
+            print("\n🎉 [PAQUETE FINAL] Composición Corporal Recibida")
+            impedancia = resultado_decodificado.get("impedancia_ohms", 0)
+            print(f"   (Impedancia extraída: {impedancia} Ω)")
             print("   Mapeo de los 20 bytes para ingeniería inversa:")
             print("   -------------------------------------------------")
             for i, byte_val in enumerate(raw_bytes):
