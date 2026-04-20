@@ -1,5 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -10,15 +11,26 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
 
 @router.get("/", response_model=List[schemas.ProfileWithLatest])
 def list_profiles(db: Session = Depends(get_db)):
+    # Single query: fetch latest measurement id per profile using a subquery
+    latest_id_subq = (
+        db.query(
+            models.Measurement.profile_id,
+            func.max(models.Measurement.id).label("latest_id"),
+        )
+        .group_by(models.Measurement.profile_id)
+        .subquery()
+    )
+    latest_measurements = {
+        row.profile_id: row
+        for row in db.query(models.Measurement)
+        .join(latest_id_subq, models.Measurement.id == latest_id_subq.c.latest_id)
+        .all()
+    }
+
     profiles = db.query(models.Profile).all()
     result = []
     for profile in profiles:
-        latest = (
-            db.query(models.Measurement)
-            .filter(models.Measurement.profile_id == profile.id)
-            .order_by(models.Measurement.measured_at.desc())
-            .first()
-        )
+        latest = latest_measurements.get(profile.id)
         result.append(
             schemas.ProfileWithLatest(
                 id=profile.id,

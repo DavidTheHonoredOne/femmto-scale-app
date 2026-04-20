@@ -1,4 +1,6 @@
 import os
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,10 +8,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routers import profiles, measurements, export
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
 app = FastAPI(
     title="FEMMTO BCS15 Scale API",
     description="Backend API for the FEMMTO BCS15 smart scale web application",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -23,11 +33,6 @@ app.add_middleware(
 app.include_router(profiles.router)
 app.include_router(measurements.router)
 app.include_router(export.router)
-
-
-@app.on_event("startup")
-def create_tables():
-    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health", tags=["health"])

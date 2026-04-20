@@ -1,6 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
+
+VALID_GENDERS = {"male", "female"}
 
 
 class MeasurementCreate(BaseModel):
@@ -37,12 +39,26 @@ class ProfileCreate(BaseModel):
     age: int
     gender: str
 
+    @field_validator("gender")
+    @classmethod
+    def validate_gender(cls, v: str) -> str:
+        if v not in VALID_GENDERS:
+            raise ValueError("gender must be 'male' or 'female'")
+        return v
+
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
     height: Optional[float] = None
     age: Optional[int] = None
     gender: Optional[str] = None
+
+    @field_validator("gender")
+    @classmethod
+    def validate_gender(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in VALID_GENDERS:
+            raise ValueError("gender must be 'male' or 'female'")
+        return v
 
 
 class Profile(BaseModel):

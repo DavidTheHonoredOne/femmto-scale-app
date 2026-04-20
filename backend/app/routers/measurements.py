@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -39,7 +39,7 @@ def create_measurement(
 
     data = payload.model_dump()
     if data.get("measured_at") is None:
-        data["measured_at"] = datetime.utcnow()
+        data["measured_at"] = datetime.now(timezone.utc)
 
     measurement = models.Measurement(profile_id=profile_id, **data)
     db.add(measurement)
