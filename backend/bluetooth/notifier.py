@@ -45,7 +45,7 @@ def notificacion_handler(sender, data: bytearray):
         # Solo imprimir si es la primera vez o si el peso cambia
         if _estado_anterior != "midiendo":
             print("\n" + "=" * 45)
-            print(f"  ⏳ Subiendo a la báscula... peso detectado")
+            print("  ⏳ Subiendo a la báscula... peso detectado")
         print(f"\r  ⚖️  Peso inestable: {peso_kg:.2f} kg ...", end="", flush=True)
         _estado_anterior = "midiendo"
 

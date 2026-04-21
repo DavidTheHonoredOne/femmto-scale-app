@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
+/// <reference types="web-bluetooth" />
+import { useState, useRef, useCallback } from 'react';
 import { decodePacket, type DecodedPacket } from '../utils/bleDecoder';
 import { calculateMetrics, type UserProfile, type BodyMetrics, type Gender } from '../utils/bodyMetrics';
 
