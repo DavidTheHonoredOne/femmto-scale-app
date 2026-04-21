@@ -6,9 +6,13 @@ Enrutador principal de la API. Agrupa todas las rutas (endpoints) de la aplicaci
 
 from fastapi import APIRouter
 
+from backend.api.endpoints import profiles
+
 # Enrutador principal que agrupará todas las rutas bajo /api/v1
 api_router = APIRouter()
 
-# Aquí se incluirán los routers de los endpoints en los próximos commits, por ejemplo:
-# api_router.include_router(profiles.router, prefix="/profiles", tags=["Profiles"])
+# Incorporamos las distintas rutas aquí
+api_router.include_router(profiles.router, prefix="/profiles", tags=["Profiles"])
+
+# Aquí se incluirán en futuros commits:
 # api_router.include_router(measurements.router, prefix="/measurements", tags=["Measurements"])
