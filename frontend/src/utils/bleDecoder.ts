@@ -2,7 +2,7 @@
  * bleDecoder.ts
  * Port TypeScript of backend/bluetooth/decoder.py
  *
- * Decodes raw 20-byte BLE packets from the FEMMTO BCS15 scale.
+ * Decodes raw 20-byte BLE packets from the Belu's BCS15 scale.
  * Protocol summary:
  *   Byte 2 (B2): 0x00 = measuring, 0x80 = stable/locked, 0x01 = final composition packet
  *   Weight (grams) = ((B3 & 0x01) << 16) | (B4 << 8) | B5  → divide by 1000 for kg

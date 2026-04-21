@@ -1,17 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 :root {
-  --color-bg-primary: #060b14;
-  --color-bg-secondary: #0d1626;
-  --color-bg-card: rgba(13, 22, 38, 0.8);
-  --color-accent-cyan: #00d4ff;
-  --color-accent-blue: #3b82f6;
-  --color-accent-violet: #8b5cf6;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
+  --color-bg-primary: #F8FAFB;
+  --color-primary: #4CAF82;
+  --color-secondary: #2196B5;
+  --color-text: #1A2B3C;
+  --color-card: #FFFFFF;
 }
 
 * {
@@ -21,68 +16,57 @@
 body {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  background: var(--color-bg-primary);
-  color: #e2e8f0;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Glassmorphism card */
-.glass-card {
-  background: rgba(13, 22, 38, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 212, 255, 0.1);
-  border-radius: 1rem;
+/* Scrollbar minimalista */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* Animaciones de Hover para Tarjetas */
+.card-hover-fx {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.card-hover-fx:hover {
+  transform: scale(1.02);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
 }
 
-/* Animated gradient mesh background */
-.bg-mesh {
-  background:
-    radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.10) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 60%),
-    #060b14;
+/* Weight display ring - Health Theme */
+@keyframes pulse-ring-scan {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(33, 150, 181, 0.3), 0 0 20px rgba(33, 150, 181, 0.1); }
+  50% { box-shadow: 0 0 0 10px rgba(33, 150, 181, 0), 0 0 40px rgba(33, 150, 181, 0.2); }
 }
 
-/* Weight display ring */
-@keyframes pulse-ring {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.15); }
-  50% { box-shadow: 0 0 0 12px rgba(0, 212, 255, 0), 0 0 60px rgba(0, 212, 255, 0.25); }
+@keyframes pulse-stable-green {
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 130, 0.5), 0 0 30px rgba(76, 175, 130, 0.3); }
+  100% { box-shadow: 0 0 0 15px rgba(76, 175, 130, 0), 0 0 0px rgba(76, 175, 130, 0); }
 }
 
-@keyframes pulse-stable {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5), 0 0 40px rgba(16, 185, 129, 0.2); }
-  50% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0), 0 0 70px rgba(16, 185, 129, 0.3); }
-}
+.ring-measuring { animation: pulse-ring-scan 1.5s ease-in-out infinite; border-color: var(--color-secondary); }
+.ring-stable { animation: pulse-stable-green 1s ease-out; border-color: var(--color-primary); }
 
-.ring-measuring { animation: pulse-ring 1.5s ease-in-out infinite; }
-.ring-stable { animation: pulse-stable 2s ease-in-out infinite; }
-
-/* Metric card hover */
+/* Fade in up para elementos anidados */
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.metric-card {
-  animation: fade-in-up 0.4s ease both;
+.animate-fade-in {
+  animation: fade-in-up 0.4s ease-out forwards;
 }
 
-.metric-card:nth-child(1) { animation-delay: 0.05s; }
-.metric-card:nth-child(2) { animation-delay: 0.10s; }
-.metric-card:nth-child(3) { animation-delay: 0.15s; }
-.metric-card:nth-child(4) { animation-delay: 0.20s; }
-.metric-card:nth-child(5) { animation-delay: 0.25s; }
-.metric-card:nth-child(6) { animation-delay: 0.30s; }
-.metric-card:nth-child(7) { animation-delay: 0.35s; }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.2); border-radius: 3px; }
-
-/* Number font */
+/* Números mono-espaciados */
 .font-mono-num {
   font-family: 'JetBrains Mono', monospace;
+}
+
+/* Grillas responsivas para React Select */
+.react-select-container {
+  z-index: 50;
 }

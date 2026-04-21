@@ -46,6 +46,7 @@ def create_measurement(measurement_in: MeasurementCreate, db: Session = Depends(
         agua_corporal=measurement_in.agua_corporal_pct,
         frecuencia_muscular=measurement_in.impedancia_ohms,
         edad_corporal=measurement_in.edad_corporal,
+        grasa_visceral=measurement_in.grasa_visceral,
     )
 
     db.add(nueva_medicion)

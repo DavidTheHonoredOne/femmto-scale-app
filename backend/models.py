@@ -1,15 +1,17 @@
 """
 backend/models.py
 ────────────────────────────────────────────────────────────────────────────────
-Modelos ORM con SQLAlchemy 2.0 para la aplicación Femmto Scale.
+Modelos ORM con SQLAlchemy 2.0 para la aplicación Belu's Scale.
 
 Tablas:
-  - perfil    → Datos fijos del usuario (nombre, edad, estatura, género)
-  - medicion  → Resultado de cada pesaje BIA vinculado a un perfil
+  - perfil              → Datos fijos del usuario (nombre, edad, estatura, género)
+  - medicion            → Resultado de cada pesaje BIA vinculado a un perfil
+  - rendimiento_deportivo → Historial de métricas de rendimiento (remate, bloqueo, envergadura)
 
 Relaciones:
   - Un perfil puede tener múltiples mediciones (one-to-many)
-  - Al eliminar un perfil se eliminan en cascada todas sus mediciones
+  - Un perfil puede tener múltiples registros de rendimiento (one-to-many)
+  - Al eliminar un perfil se eliminan en cascada todas sus mediciones y rendimientos
 """
 
 from __future__ import annotations
@@ -65,8 +67,17 @@ class Perfil(Base):
     mediciones: Mapped[list[Medicion]] = relationship(
         "Medicion",
         back_populates="perfil",
-        cascade="all, delete-orphan",   # Borra mediciones si se borra el perfil
-        lazy="selectin",                # Carga optimizada sin N+1
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    # Relación inversa: historial de rendimiento deportivo
+    rendimientos: Mapped[list[RendimientoDeportivo]] = relationship(
+        "RendimientoDeportivo",
+        back_populates="perfil",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="RendimientoDeportivo.fecha.desc()",
     )
 
     def __repr__(self) -> str:
@@ -166,6 +177,51 @@ class Medicion(Base):
         )
 
 
+# ── Modelo: RendimientoDeportivo ───────────────────────────────────────────────
+
+class RendimientoDeportivo(Base):
+    """
+    Registro histórico de métricas de rendimiento deportivo.
+
+    Permite registrar la evolución temporal de alcance (remate, bloqueo)
+    y envergadura de cada perfil. Cada registro es un snapshot con fecha.
+    """
+
+    __tablename__ = "rendimiento_deportivo"
+
+    # Clave primaria
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+
+    # Clave foránea → elimina el registro si el perfil es borrado
+    perfil_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("perfil.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Fecha del registro (UTC)
+    fecha: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=_ahora_utc,
+        nullable=False,
+    )
+
+    # Métricas de rendimiento (todas opcionales para permitir registros parciales)
+    remate: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    bloqueo: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    envergadura: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    # Relación hacia el perfil padre
+    perfil: Mapped[Perfil] = relationship("Perfil", back_populates="rendimientos")
+
+    def __repr__(self) -> str:
+        return (
+            f"<RendimientoDeportivo id={self.id} perfil_id={self.perfil_id} "
+            f"remate={self.remate} bloqueo={self.bloqueo} fecha={self.fecha}>"
+        )
+
+
 # ── Creación de tablas (uso directo) ──────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -176,4 +232,4 @@ if __name__ == "__main__":
 
     print("Creando tablas en Neon PostgreSQL...")
     Base.metadata.create_all(bind=engine)
-    print("[OK] Tablas 'perfil' y 'medicion' creadas (o ya existian).")
+    print("[OK] Tablas creadas.")
