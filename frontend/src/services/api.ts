@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-// Usa la variable de entorno de VITE si existe, de lo contrario cae en localhost
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+let baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+if (baseUrl && !baseUrl.endsWith('/api/v1')) {
+  if (baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
+  baseUrl += '/api/v1';
+}
+
+const API_BASE_URL = baseUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
