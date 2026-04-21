@@ -63,6 +63,7 @@ class BodyMetricsCalculator:
                     "masa_muscular_kg": None,
                     "agua_corporal_porcentaje": None,
                     "edad_corporal": None,
+                    "grasa_visceral": None,
                 }
             )
             return resultado
@@ -105,6 +106,10 @@ class BodyMetricsCalculator:
         bf_ideal = 15.0 if es_hombre else 22.0
         edad_corporal = edad_anos + round((grasa_corporal_porcentaje - bf_ideal) / 5.0)
 
+        # Índice de Grasa Visceral — Aproximación BIA estándar
+        # Fórmula: grasa_corporal% * 0.3 + edad / 10
+        grasa_visceral_indice = (grasa_corporal_porcentaje * 0.3) + (edad_anos / 10)
+
         resultado.update(
             {
                 "bia_error": False,
@@ -113,6 +118,7 @@ class BodyMetricsCalculator:
                 "masa_muscular_kg": round(masa_muscular_kg, 1),
                 "agua_corporal_porcentaje": round(agua_corporal_porcentaje, 1),
                 "edad_corporal": int(round(edad_corporal)),
+                "grasa_visceral": round(grasa_visceral_indice, 1),
             }
         )
 
