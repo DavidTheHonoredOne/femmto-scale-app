@@ -13,7 +13,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
 
 # ── Importar Base (con todos los modelos registrados) y el engine real ─────────
 from backend.database import engine

@@ -11,7 +11,6 @@ Uso:
     python backend/seed.py
 """
 
-from datetime import datetime, timezone
 
 from sqlalchemy.exc import SQLAlchemyError
 
