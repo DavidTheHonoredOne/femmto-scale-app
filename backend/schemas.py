@@ -44,3 +44,59 @@ class ProfileResponse(ProfileBase):
 
     # Permite a Pydantic leer los datos directamente del modelo ORM de SQLAlchemy automatizando el .dict()
     model_config = ConfigDict(from_attributes=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SCHEMAS DE MEDICIÓN
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Schema Base ───────────────────────────────────────────────────────────────
+
+class MeasurementBase(BaseModel):
+    """Campos opcionales de una medición BIA. Solo peso_kg es obligatorio."""
+
+    # Obligatorio: capturado directamente de la báscula
+    peso_kg: float = Field(..., gt=0, le=500, example=72.5)
+
+    # Métricas base (calculadas sin impedancia)
+    imc: Optional[float] = Field(None, ge=10, le=80, example=23.1)
+    bmr_kcal: Optional[float] = Field(None, gt=0, example=1750.0)
+    peso_estandar_kg: Optional[float] = Field(None, gt=0, example=68.0)
+
+    # Métricas BIA (requieren impedancia válida)
+    grasa_corporal_pct: Optional[float] = Field(None, ge=0, le=100, example=18.5)
+    masa_muscular_kg: Optional[float] = Field(None, ge=0, example=55.0)
+    agua_corporal_pct: Optional[float] = Field(None, ge=0, le=100, example=60.0)
+    impedancia_ohms: Optional[float] = Field(None, ge=0, example=520.0)
+    edad_corporal: Optional[int] = Field(None, ge=1, le=120, example=22)
+
+
+# ── Schema para Crear ─────────────────────────────────────────────────────────
+
+class MeasurementCreate(MeasurementBase):
+    """Datos requeridos para registrar una nueva medición. Incluye la FK del perfil."""
+    profile_id: int = Field(..., example=1)
+
+
+# ── Schema de Respuesta ───────────────────────────────────────────────────────
+
+class MeasurementResponse(MeasurementBase):
+    """Datos devueltos al cliente tras crear o consultar una medición."""
+
+    id: int
+
+    # Mapeo ORM → API: perfil_id (ORM) → profile_id (API)
+    profile_id: int = Field(validation_alias="perfil_id")
+
+    # Mapeo ORM → API: fecha (ORM) → created_at (API)
+    created_at: datetime = Field(validation_alias="fecha")
+
+    # Mapeo ORM → API: nombres de columnas a nombres del schema base
+    bmr_kcal: Optional[float] = Field(None, validation_alias="bmr")
+    peso_estandar_kg: Optional[float] = Field(None, validation_alias="peso_estandar")
+    grasa_corporal_pct: Optional[float] = Field(None, validation_alias="grasa_corporal")
+    masa_muscular_kg: Optional[float] = Field(None, validation_alias="masa_muscular")
+    agua_corporal_pct: Optional[float] = Field(None, validation_alias="agua_corporal")
+    impedancia_ohms: Optional[float] = Field(None, validation_alias="frecuencia_muscular")
+
+    model_config = ConfigDict(from_attributes=True)
