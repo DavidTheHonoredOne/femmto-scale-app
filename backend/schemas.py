@@ -54,17 +54,17 @@ class MeasurementBase(BaseModel):
     peso_kg: float = Field(..., gt=0, le=500, example=72.5)
 
     # Métricas base (calculadas sin impedancia)
-    imc: Optional[float] = Field(None, ge=10, le=80, example=23.1)
-    bmr_kcal: Optional[float] = Field(None, gt=0, example=1750.0)
-    peso_estandar_kg: Optional[float] = Field(None, gt=0, example=68.0)
+    imc: Optional[float] = Field(None, ge=0, le=100, example=23.1)
+    bmr_kcal: Optional[float] = Field(None, ge=0, example=1750.0)
+    peso_estandar_kg: Optional[float] = Field(None, ge=0, example=68.0)
 
     # Métricas BIA (requieren impedancia válida)
     grasa_corporal_pct: Optional[float] = Field(None, ge=0, le=100, example=18.5)
     masa_muscular_kg: Optional[float] = Field(None, ge=0, example=55.0)
     agua_corporal_pct: Optional[float] = Field(None, ge=0, le=100, example=60.0)
     impedancia_ohms: Optional[float] = Field(None, ge=0, example=520.0)
-    edad_corporal: Optional[int] = Field(None, ge=1, le=120, example=22)
-    grasa_visceral: Optional[float] = Field(None, ge=1, example=5.0)
+    edad_corporal: Optional[int] = Field(None, ge=0, le=150, example=22)
+    grasa_visceral: Optional[float] = Field(None, ge=0, example=5.0)
 
 
 class MeasurementCreate(MeasurementBase):
