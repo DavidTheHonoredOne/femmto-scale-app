@@ -33,6 +33,7 @@ export interface BodyMetrics {
   muscleMassKg: number | null;
   waterPercent: number | null;
   bodyAge: number | null;
+  visceralFat: number | null;  // Índice de grasa visceral estimado BIA
 
   // Extra info
   impedanceOhms: number;
@@ -80,16 +81,17 @@ export function calculateMetrics(
       muscleMassKg: null,
       waterPercent: null,
       bodyAge: null,
+      visceralFat: null,
     };
   }
 
-  // ── BIA cascade (2-point calibration vs FitDays) ─────────────
+  // ── BIA cascade — Generalized equations (robust across different body types) ──
   const h2z = (heightCm ** 2) / impedanceOhms;   // Height² / Impedance — BIA core factor
 
-  // Fat-Free Mass (FFM) — calibrated linear equation
+  // Fat-Free Mass (FFM) — generalized multi-variable linear model
   let ffmKg = isMale
-    ? (0.414 * h2z) + (0.25 * weightKg) + 16.26
-    : (0.380 * h2z) + (0.22 * weightKg) + 14.0;
+    ? (0.39 * h2z) + (0.14 * weightKg) + (0.16 * heightCm) - 10.0
+    : (0.36 * h2z) + (0.12 * weightKg) + (0.15 * heightCm) - 9.0;
 
   // Physiological safety clamp
   if (ffmKg > weightKg) ffmKg = weightKg * 0.95;
@@ -97,20 +99,23 @@ export function calculateMetrics(
   const fatMassKg  = weightKg - ffmKg;
   const fatPercent = (fatMassKg / weightKg) * 100;
 
-  // Muscle mass — calibrated independently against FitDays (not derived from FFM)
+  // Muscle mass — generalized independent model
   const rawMuscle = isMale
-    ? (0.091 * h2z) + (0.20 * weightKg) + 36.12
-    : (0.085 * h2z) + (0.18 * weightKg) + 32.0;
+    ? (0.29 * h2z) + (0.11 * weightKg) + (0.10 * heightCm) - 5.0
+    : (0.27 * h2z) + (0.10 * weightKg) + (0.09 * heightCm) - 4.5;
 
   const muscleMassKg = Math.min(ffmKg * 0.98, Math.max(ffmKg * 0.80, rawMuscle));
 
-  // Water — Pace & Rathbun constant calibrated at 71.6% (vs FitDays)
+  // Water — Pace & Rathbun constant
   const waterKg      = ffmKg * 0.716;
   const waterPercent = (waterKg / weightKg) * 100;
 
   // Body age — deviation from ideal body fat % (15% male / 22% female)
   const bfIdeal = isMale ? 15.0 : 22.0;
   const bodyAge = Math.round(ageYears + (fatPercent - bfIdeal) / 5.0);
+
+  // Visceral fat index — BIA standard approximation
+  const visceralFat = Math.round(((fatPercent * 0.3) + (ageYears / 10)) * 10) / 10;
 
   return {
     ...base,
@@ -120,5 +125,6 @@ export function calculateMetrics(
     muscleMassKg:  Math.round(muscleMassKg  * 10) / 10,
     waterPercent:  Math.round(waterPercent  * 10) / 10,
     bodyAge,
+    visceralFat,
   };
 }

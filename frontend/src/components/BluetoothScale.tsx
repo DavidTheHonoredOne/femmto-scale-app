@@ -88,8 +88,8 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
         bmr_kcal: metrics.bmrKcal ?? undefined,
         edad_corporal: metrics.bodyAge ?? undefined,
         peso_estandar_kg: metrics.standardWeightKg ?? undefined,
-        // Optional BIA
-        impedancia_ohms: impedance !== 0 ? impedance : undefined
+        grasa_visceral: metrics.visceralFat ?? undefined,
+        impedancia_ohms: impedance !== 0 ? impedance : undefined,
       });
       setStatusMsg('Medición guardada correctamente ✅');
       onMeasurementSaved();
@@ -101,33 +101,39 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
     }
   };
 
-  const connectToGatt = async (device: BluetoothDevice, maxRetries = 3) => {
-    for (let i = 0; i < maxRetries; i++) {
+  // Deep Retry: wraps connect + getPrimaryService + characteristics in a single
+  // atomic loop so a GATT-disconnected error during getPrimaryService is caught.
+  const connectAndSetupBluetooth = async (device: BluetoothDevice, maxRetries = 3) => {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        return await device.gatt!.connect();
+        const server = await device.gatt!.connect();
+        // Crucial 500 ms stabilisation before requesting services
+        await new Promise(r => setTimeout(r, 500));
+        const service     = await server.getPrimaryService(SERVICE_UUID);
+        const notifyChar  = await service.getCharacteristic(CHAR_NOTIFY);
+        const writeChar   = await service.getCharacteristic(CHAR_WRITE);
+
+        notifyChar.addEventListener('characteristicvaluechanged', handleNotification);
+        await notifyChar.startNotifications();
+
+        for (const cmd of WAKE_COMMANDS) {
+          try {
+            await writeChar.writeValue(cmd);
+            await new Promise(r => setTimeout(r, 800));
+          } catch {}
+        }
+
+        return server; // success
       } catch (err) {
-        if (i === maxRetries - 1) throw err;
-        setStatusMsg(`Conexión inestable, reintentando (${i + 1}/${maxRetries})...`);
-        await new Promise(r => setTimeout(r, 1500));
+        lastErr = err;
+        if (attempt < maxRetries - 1) {
+          setStatusMsg(`Conexión inestable, reintentando (${attempt + 1}/${maxRetries})...`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
       }
     }
-    throw new Error("Fallaron los reintentos de conexión.");
-  };
-
-  const setupBluetoothCharacteristics = async (server: BluetoothRemoteGATTServer) => {
-    const service = await server.getPrimaryService(SERVICE_UUID);
-    const notifyChar = await service.getCharacteristic(CHAR_NOTIFY);
-    const writeChar  = await service.getCharacteristic(CHAR_WRITE);
-
-    notifyChar.addEventListener('characteristicvaluechanged', handleNotification);
-    await notifyChar.startNotifications();
-
-    for (const cmd of WAKE_COMMANDS) {
-      try {
-        await writeChar.writeValue(cmd);
-        await new Promise(r => setTimeout(r, 800));
-      } catch {}
-    }
+    throw lastErr;
   };
 
   const handleConnect = useCallback(async () => {
@@ -149,10 +155,8 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
       deviceRef.current = device;
 
       setStatusMsg('Conectando al servidor GATT...');
-      const server = await connectToGatt(device);
+      const server = await connectAndSetupBluetooth(device);
       gattServerRef.current = server;
-
-      await setupBluetoothCharacteristics(server);
 
       setStatusMsg('Suba a la báscula ahora...');
 
@@ -164,9 +168,8 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
 
         setStatusMsg('Conexión inestable, intentando reconectar... ¡Acércate a la báscula!');
         try {
-          const newServer = await connectToGatt(device, 4); // Try 4 times on drop
+          const newServer = await connectAndSetupBluetooth(device, 4);
           gattServerRef.current = newServer;
-          await setupBluetoothCharacteristics(newServer);
           setStatusMsg('¡Reconectado! Suba a la báscula...');
         } catch (err) {
           setConnState('error');
