@@ -28,7 +28,9 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
   const [isSaving, setIsSaving] = useState(false);
 
   const gattServerRef = useRef<BluetoothRemoteGATTServer | null>(null);
+  const deviceRef = useRef<BluetoothDevice | null>(null);
   const stableWeightRef = useRef(0);
+  const isIntentionalDisconnectRef = useRef(false);
 
   // Auto-Save Management
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,6 +64,7 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
 
       const result = calculateMetrics(userProfile, impedanceOhms);
       setConnState('done');
+      isIntentionalDisconnectRef.current = true; // Auto-disconnect at end is fine
       setStatusMsg('Composición corporal calculada. Guardando...');
       
       // Delay of 1 second before saving
@@ -98,6 +101,35 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
     }
   };
 
+  const connectToGatt = async (device: BluetoothDevice, maxRetries = 3) => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await device.gatt!.connect();
+      } catch (err) {
+        if (i === maxRetries - 1) throw err;
+        setStatusMsg(`Conexión inestable, reintentando (${i + 1}/${maxRetries})...`);
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+    throw new Error("Fallaron los reintentos de conexión.");
+  };
+
+  const setupBluetoothCharacteristics = async (server: BluetoothRemoteGATTServer) => {
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    const notifyChar = await service.getCharacteristic(CHAR_NOTIFY);
+    const writeChar  = await service.getCharacteristic(CHAR_WRITE);
+
+    notifyChar.addEventListener('characteristicvaluechanged', handleNotification);
+    await notifyChar.startNotifications();
+
+    for (const cmd of WAKE_COMMANDS) {
+      try {
+        await writeChar.writeValue(cmd);
+        await new Promise(r => setTimeout(r, 800));
+      } catch {}
+    }
+  };
+
   const handleConnect = useCallback(async () => {
     if (!navigator.bluetooth) {
       setErrorMsg('Tu navegador no soporta Web Bluetooth API. Usa Chrome o Edge en escritorio.');
@@ -105,6 +137,7 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
     }
 
     try {
+      isIntentionalDisconnectRef.current = false;
       setConnState('connecting');
       setStatusMsg('Buscando báscula...');
       setErrorMsg('');
@@ -113,29 +146,32 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
         filters: [{ services: [SERVICE_UUID] }],
         optionalServices: [SERVICE_UUID],
       });
+      deviceRef.current = device;
 
       setStatusMsg('Conectando al servidor GATT...');
-      const server = await device.gatt!.connect();
+      const server = await connectToGatt(device);
       gattServerRef.current = server;
 
-      const service = await server.getPrimaryService(SERVICE_UUID);
-      const notifyChar = await service.getCharacteristic(CHAR_NOTIFY);
-      const writeChar  = await service.getCharacteristic(CHAR_WRITE);
-
-      notifyChar.addEventListener('characteristicvaluechanged', handleNotification);
-      await notifyChar.startNotifications();
-
-      for (const cmd of WAKE_COMMANDS) {
-        try {
-          await writeChar.writeValue(cmd);
-          await new Promise(r => setTimeout(r, 800));
-        } catch {}
-      }
+      await setupBluetoothCharacteristics(server);
 
       setStatusMsg('Suba a la báscula ahora...');
 
-      device.addEventListener('gattserverdisconnected', () => {
-        if (connState !== 'done') setConnState('idle');
+      device.addEventListener('gattserverdisconnected', async () => {
+        if (isIntentionalDisconnectRef.current) {
+          setConnState('idle');
+          return;
+        }
+
+        setStatusMsg('Conexión inestable, intentando reconectar... ¡Acércate a la báscula!');
+        try {
+          const newServer = await connectToGatt(device, 4); // Try 4 times on drop
+          gattServerRef.current = newServer;
+          await setupBluetoothCharacteristics(newServer);
+          setStatusMsg('¡Reconectado! Suba a la báscula...');
+        } catch (err) {
+          setConnState('error');
+          setErrorMsg('Pérdida de señal. Acércate más y vuelve a conectar.');
+        }
       });
 
     } catch (err: unknown) {
@@ -148,10 +184,11 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
         setErrorMsg(`Error de conexión: ${msg}`);
       }
     }
-  }, [handleNotification, connState]);
+  }, [handleNotification]);
 
   const handleReset = () => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    isIntentionalDisconnectRef.current = true;
     gattServerRef.current?.disconnect();
     setConnState('idle');
     setCurrentWeight(0);
@@ -175,10 +212,10 @@ export const BluetoothScale: React.FC<BluetoothScaleProps> = ({ activeProfile, o
     connState === 'measuring'                      ? 'text-[#2196B5]' :
                                                      'text-[#1A2B3C]';
 
-  // Make sure we clear timer on unmount
   useEffect(() => {
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      isIntentionalDisconnectRef.current = true;
       gattServerRef.current?.disconnect();
     };
   }, []);

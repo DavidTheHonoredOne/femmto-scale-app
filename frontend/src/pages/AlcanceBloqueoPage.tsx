@@ -225,6 +225,7 @@ export const AlcanceBloqueoPage: React.FC = () => {
   const [expandedProfile, setExpandedProfile] = useState<number | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterGender, setFilterGender] = useState<'ALL' | 'M' | 'F'>('ALL');
 
   useEffect(() => { fetchData(); }, []);
 
@@ -260,9 +261,15 @@ export const AlcanceBloqueoPage: React.FC = () => {
 
   const sortedProfiles = useMemo(() => {
     let filtered = profiles;
+    
+    if (filterGender !== 'ALL') {
+      const genderStr = filterGender === 'M' ? 'masculino' : 'femenino';
+      filtered = filtered.filter(p => p.genero === genderStr);
+    }
+    
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
-      filtered = profiles.filter(p => p.nombre.toLowerCase().includes(q));
+      filtered = filtered.filter(p => p.nombre.toLowerCase().includes(q));
     }
 
     return [...filtered].sort((a, b) => {
@@ -272,7 +279,7 @@ export const AlcanceBloqueoPage: React.FC = () => {
       const valB = latB?.[sortBy] ?? -1;
       return valB - valA;
     });
-  }, [profiles, performanceMap, sortBy, searchQuery]);
+  }, [profiles, performanceMap, sortBy, searchQuery, filterGender]);
 
   const handleSaved = (record: PerformanceRecord) => {
     setPerformanceMap(prev => {
@@ -293,6 +300,17 @@ export const AlcanceBloqueoPage: React.FC = () => {
           <p className="text-[#64748B]">Historial de rendimiento deportivo por perfil.</p>
         </div>
         <div className="flex gap-3 flex-wrap items-center">
+          {/* Gender Filter */}
+          <div className="bg-white rounded-xl shadow-sm border border-[#E8EDF2] p-1 flex">
+            {(['ALL', 'M', 'F'] as const).map(g => (
+              <button key={g} onClick={() => setFilterGender(g)}
+                className={`px-3 py-2 text-sm font-bold rounded-lg transition-colors ${filterGender === g ? 'bg-[#2196B5]/10 text-[#2196B5]' : 'text-[#64748B] hover:bg-[#F8FAFB]'}`}>
+                {g === 'ALL' ? 'Todos' : g === 'M' ? 'Hombres' : 'Mujeres'}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
           <div className="relative w-full sm:w-64">
             <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]"></i>
             <input
